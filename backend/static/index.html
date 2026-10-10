@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes of Earth</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            color: #333;
+            background: #f8f9fa;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        button.danger {
+            background: #e74c3c;
+        }
+        button.danger:hover:not(:disabled) {
+            background: #c0392b;
+        }
+        #audioPlayback {
+            width: 100%;
+            margin-top: 1rem;
+            display: none;
+        }
+        .hidden {
+            display: none;
+        }
+        .event-item {
+            border-left: 4px solid #3498db;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+        }
+        .disclaimer {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 2rem;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+        #statusMessage {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Echoes of Earth</h1>
+    <p class="subtitle">AI-powered environmental sound exploration.</p>
+    
+    <div class="card">
+        <h3>1. Provide Audio</h3>
+        <p>Record from your microphone or upload an audio file (e.g., WAV).</p>
+        
+        <div class="controls">
+            <button id="btnRecord">Start Recording</button>
+            <button id="btnStop" class="danger" disabled>Stop Recording</button>
+        </div>
+        <p style="margin:1rem 0;"><em>— OR —</em></p>
+        <div>
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+
+        <audio id="audioPlayback" controls></audio>
+        <div id="statusMessage"></div>
+    </div>
+
+    <div class="card">
+        <h3>2. Analyze</h3>
+        <button id="btnAnalyze" disabled>Analyze Audio</button>
+        <p id="analyzeStatus" class="hidden">Analyzing... this may take a moment.</p>
+    </div>
+
+    <div id="resultsCard" class="card hidden">
+        <h3>Results</h3>
+        <p><strong>Filename:</strong> <span id="resFilename"></span></p>
+        <p><strong>Duration:</strong> <span id="resDuration"></span>s</p>
+        
+        <h4>Detected Events</h4>
+        <div id="eventsList"></div>
+        
+        <h4>Top Predictions (Clip Average)</h4>
+        <ul id="topPredictionsList"></ul>
+    </div>
+
+    <div class="disclaimer">
+        <strong>Note:</strong> Microphone recording requires browser permission and HTTPS (or localhost). 
+        Browser recordings may use formats like WebM which the backend will attempt to decode. 
+        Model scores are model outputs, not calibrated probabilities, and timestamps are approximate.
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let currentAudioBlob = null;
+        let currentFilename = null;
+
+        const btnRecord = document.getElementById('btnRecord');
+        const btnStop = document.getElementById('btnStop');
+        const fileInput = document.getElementById('fileInput');
+        const audioPlayback = document.getElementById('audioPlayback');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+        const statusMessage = document.getElementById('statusMessage');
+        const analyzeStatus = document.getElementById('analyzeStatus');
+        
+        // Handle Recording
+        btnRecord.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    currentAudioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    currentFilename = "browser_recording.webm";
+                    setupAudioPlayback(currentAudioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                btnRecord.disabled = true;
+                btnStop.disabled = false;
+                fileInput.disabled = true;
+                statusMessage.textContent = "Recording...";
+                statusMessage.style.color = "#e74c3c";
+            } catch (err) {
+                console.error(err);
+                statusMessage.textContent = "Microphone access denied or error occurred.";
+                statusMessage.style.color = "red";
+            }
+        });
+
+        btnStop.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                btnRecord.disabled = false;
+                btnStop.disabled = true;
+                fileInput.disabled = false;
+                statusMessage.textContent = "Recording stopped.";
+                statusMessage.style.color = "green";
+            }
+        });
+
+        // Handle File Upload
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                currentAudioBlob = file;
+                currentFilename = file.name;
+                setupAudioPlayback(file);
+                statusMessage.textContent = "File selected.";
+                statusMessage.style.color = "green";
+            }
+        });
+
+        function setupAudioPlayback(blob) {
+            const url = URL.createObjectURL(blob);
+            audioPlayback.src = url;
+            audioPlayback.style.display = "block";
+            btnAnalyze.disabled = false;
+        }
+
+        // Handle Analysis
+        btnAnalyze.addEventListener('click', async () => {
+            if (!currentAudioBlob) return;
+            
+            btnAnalyze.disabled = true;
+            analyzeStatus.classList.remove('hidden');
+            document.getElementById('resultsCard').classList.add('hidden');
+            
+            const formData = new FormData();
+            formData.append("file", currentAudioBlob, currentFilename);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Analysis failed");
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                btnAnalyze.disabled = false;
+                analyzeStatus.classList.add('hidden');
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('resultsCard').classList.remove('hidden');
+            document.getElementById('resFilename').textContent = data.filename;
+            document.getElementById('resDuration').textContent = data.duration_seconds;
+
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = '';
+            
+            if (data.events && data.events.length > 0) {
+                data.events.forEach(ev => {
+                    const div = document.createElement('div');
+                    div.className = 'event-item';
+                    div.innerHTML = `
+                        <strong>${ev.label}</strong> <span style="color:#7f8c8d">(${ev.category})</span><br>
+                        Time: ${ev.start_seconds}s - ${ev.end_seconds}s<br>
+                        Peak Score: ${ev.peak_score}
+                    `;
+                    eventsList.appendChild(div);
+                });
+            } else {
+                eventsList.innerHTML = '<p><em>No events met the threshold criteria.</em></p>';
+            }
+
+            const topList = document.getElementById('topPredictionsList');
+            topList.innerHTML = '';
+            data.top_predictions.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.label} (Score: ${p.score})`;
+                topList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
