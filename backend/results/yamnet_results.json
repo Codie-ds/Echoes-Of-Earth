@@ -1,0 +1,158 @@
+[
+  {
+    "filename": "Clip_01.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Animal",
+        "score": 0.389
+      },
+      {
+        "label": "Wild animals",
+        "score": 0.2993
+      },
+      {
+        "label": "Bird",
+        "score": 0.2795
+      },
+      {
+        "label": "Bird vocalization, bird call, bird song",
+        "score": 0.1313
+      },
+      {
+        "label": "Chirp, tweet",
+        "score": 0.104
+      }
+    ]
+  },
+  {
+    "filename": "Clip_02.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Thunderstorm",
+        "score": 0.5055
+      },
+      {
+        "label": "Thunder",
+        "score": 0.4676
+      },
+      {
+        "label": "White noise",
+        "score": 0.2026
+      },
+      {
+        "label": "Rain",
+        "score": 0.1973
+      },
+      {
+        "label": "Noise",
+        "score": 0.1095
+      }
+    ]
+  },
+  {
+    "filename": "Clip_03.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Water",
+        "score": 0.7662
+      },
+      {
+        "label": "Rain",
+        "score": 0.6046
+      },
+      {
+        "label": "Rain on surface",
+        "score": 0.411
+      },
+      {
+        "label": "Raindrop",
+        "score": 0.3801
+      },
+      {
+        "label": "Waterfall",
+        "score": 0.3697
+      }
+    ]
+  },
+  {
+    "filename": "Clip_04.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Walk, footsteps",
+        "score": 0.3323
+      },
+      {
+        "label": "Outside, rural or natural",
+        "score": 0.2285
+      },
+      {
+        "label": "Fireworks",
+        "score": 0.2168
+      },
+      {
+        "label": "Explosion",
+        "score": 0.2009
+      },
+      {
+        "label": "Firecracker",
+        "score": 0.1188
+      }
+    ]
+  },
+  {
+    "filename": "Clip_05.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Vehicle",
+        "score": 0.7706
+      },
+      {
+        "label": "Truck",
+        "score": 0.1375
+      },
+      {
+        "label": "Motor vehicle (road)",
+        "score": 0.1036
+      },
+      {
+        "label": "Bus",
+        "score": 0.0678
+      },
+      {
+        "label": "Outside, urban or manmade",
+        "score": 0.0437
+      }
+    ]
+  },
+  {
+    "filename": "Clip_06.wav",
+    "duration_seconds": 5.0,
+    "top_predictions": [
+      {
+        "label": "Fire",
+        "score": 0.1789
+      },
+      {
+        "label": "Outside, rural or natural",
+        "score": 0.1636
+      },
+      {
+        "label": "Bicycle",
+        "score": 0.144
+      },
+      {
+        "label": "Crackle",
+        "score": 0.1141
+      },
+      {
+        "label": "Animal",
+        "score": 0.0464
+      }
+    ]
+  }
+]
