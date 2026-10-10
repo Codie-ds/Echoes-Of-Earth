@@ -1,0 +1,388 @@
+[
+  {
+    "filename": "Clip_01.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [
+      {
+        "label": "Animal",
+        "category": "Birds and animals",
+        "start_seconds": 0.48,
+        "end_seconds": 1.92,
+        "peak_score": 0.9044,
+        "mean_score": 0.6559,
+        "status": "detected"
+      },
+      {
+        "label": "Bird",
+        "category": "Birds and animals",
+        "start_seconds": 0.48,
+        "end_seconds": 1.92,
+        "peak_score": 0.8791,
+        "mean_score": 0.6023,
+        "status": "detected"
+      },
+      {
+        "label": "Wild animals",
+        "category": "Birds and animals",
+        "start_seconds": 0.48,
+        "end_seconds": 1.92,
+        "peak_score": 0.8695,
+        "mean_score": 0.6133,
+        "status": "detected"
+      },
+      {
+        "label": "Animal",
+        "category": "Birds and animals",
+        "start_seconds": 2.4,
+        "end_seconds": 3.84,
+        "peak_score": 0.7265,
+        "mean_score": 0.5349,
+        "status": "detected"
+      },
+      {
+        "label": "Animal",
+        "category": "Birds and animals",
+        "start_seconds": 3.84,
+        "end_seconds": 5.0,
+        "peak_score": 0.5493,
+        "mean_score": 0.4873,
+        "status": "detected"
+      }
+    ],
+    "top_predictions": [
+      {
+        "label": "Animal",
+        "score": 0.389
+      },
+      {
+        "label": "Wild animals",
+        "score": 0.2993
+      },
+      {
+        "label": "Bird",
+        "score": 0.2795
+      },
+      {
+        "label": "Bird vocalization, bird call, bird song",
+        "score": 0.1313
+      },
+      {
+        "label": "Chirp, tweet",
+        "score": 0.104
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  },
+  {
+    "filename": "Clip_02.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [
+      {
+        "label": "Thunderstorm",
+        "category": "Wind and weather",
+        "start_seconds": 0.96,
+        "end_seconds": 4.8,
+        "peak_score": 0.9184,
+        "mean_score": 0.7151,
+        "status": "detected"
+      },
+      {
+        "label": "Thunder",
+        "category": "Unknown or unclassified",
+        "start_seconds": 0.96,
+        "end_seconds": 4.32,
+        "peak_score": 0.8919,
+        "mean_score": 0.7284,
+        "status": "detected"
+      },
+      {
+        "label": "Rain",
+        "category": "Water and rain",
+        "start_seconds": 1.92,
+        "end_seconds": 3.36,
+        "peak_score": 0.523,
+        "mean_score": 0.5221,
+        "status": "detected"
+      }
+    ],
+    "top_predictions": [
+      {
+        "label": "Thunderstorm",
+        "score": 0.5055
+      },
+      {
+        "label": "Thunder",
+        "score": 0.4676
+      },
+      {
+        "label": "White noise",
+        "score": 0.2026
+      },
+      {
+        "label": "Rain",
+        "score": 0.1973
+      },
+      {
+        "label": "Noise",
+        "score": 0.1095
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  },
+  {
+    "filename": "Clip_03.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [
+      {
+        "label": "Water",
+        "category": "Water and rain",
+        "start_seconds": 0.0,
+        "end_seconds": 5.0,
+        "peak_score": 0.9419,
+        "mean_score": 0.7662,
+        "status": "detected"
+      },
+      {
+        "label": "Rain",
+        "category": "Water and rain",
+        "start_seconds": 0.48,
+        "end_seconds": 5.0,
+        "peak_score": 0.9231,
+        "mean_score": 0.6429,
+        "status": "detected"
+      },
+      {
+        "label": "Waterfall",
+        "category": "Water and rain",
+        "start_seconds": 0.96,
+        "end_seconds": 3.36,
+        "peak_score": 0.802,
+        "mean_score": 0.5571,
+        "status": "detected"
+      },
+      {
+        "label": "Stream",
+        "category": "Unknown or unclassified",
+        "start_seconds": 0.96,
+        "end_seconds": 3.36,
+        "peak_score": 0.5853,
+        "mean_score": 0.4295,
+        "status": "detected"
+      },
+      {
+        "label": "Gurgling",
+        "category": "Unknown or unclassified",
+        "start_seconds": 0.96,
+        "end_seconds": 2.4,
+        "peak_score": 0.3619,
+        "mean_score": 0.3489,
+        "status": "detected"
+      },
+      {
+        "label": "Rain on surface",
+        "category": "Water and rain",
+        "start_seconds": 2.4,
+        "end_seconds": 5.0,
+        "peak_score": 0.7277,
+        "mean_score": 0.5291,
+        "status": "detected"
+      },
+      {
+        "label": "Raindrop",
+        "category": "Water and rain",
+        "start_seconds": 2.4,
+        "end_seconds": 5.0,
+        "peak_score": 0.6822,
+        "mean_score": 0.5026,
+        "status": "detected"
+      }
+    ],
+    "top_predictions": [
+      {
+        "label": "Water",
+        "score": 0.7662
+      },
+      {
+        "label": "Rain",
+        "score": 0.6046
+      },
+      {
+        "label": "Rain on surface",
+        "score": 0.411
+      },
+      {
+        "label": "Raindrop",
+        "score": 0.3801
+      },
+      {
+        "label": "Waterfall",
+        "score": 0.3697
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  },
+  {
+    "filename": "Clip_04.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [
+      {
+        "label": "Walk, footsteps",
+        "category": "Human activity",
+        "start_seconds": 0.0,
+        "end_seconds": 2.88,
+        "peak_score": 0.694,
+        "mean_score": 0.4747,
+        "status": "detected"
+      },
+      {
+        "label": "Outside, rural or natural",
+        "category": "Unknown or unclassified",
+        "start_seconds": 0.0,
+        "end_seconds": 2.4,
+        "peak_score": 0.4608,
+        "mean_score": 0.39,
+        "status": "detected"
+      },
+      {
+        "label": "Fireworks",
+        "category": "Fire and crackling",
+        "start_seconds": 3.36,
+        "end_seconds": 4.8,
+        "peak_score": 0.9884,
+        "mean_score": 0.9557,
+        "status": "detected"
+      },
+      {
+        "label": "Explosion",
+        "category": "Unknown or unclassified",
+        "start_seconds": 3.36,
+        "end_seconds": 4.8,
+        "peak_score": 0.9737,
+        "mean_score": 0.891,
+        "status": "detected"
+      },
+      {
+        "label": "Firecracker",
+        "category": "Fire and crackling",
+        "start_seconds": 3.36,
+        "end_seconds": 4.8,
+        "peak_score": 0.5375,
+        "mean_score": 0.483,
+        "status": "detected"
+      }
+    ],
+    "top_predictions": [
+      {
+        "label": "Walk, footsteps",
+        "score": 0.3323
+      },
+      {
+        "label": "Outside, rural or natural",
+        "score": 0.2285
+      },
+      {
+        "label": "Fireworks",
+        "score": 0.2168
+      },
+      {
+        "label": "Explosion",
+        "score": 0.2009
+      },
+      {
+        "label": "Firecracker",
+        "score": 0.1188
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  },
+  {
+    "filename": "Clip_05.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [
+      {
+        "label": "Vehicle",
+        "category": "Transport",
+        "start_seconds": 0.0,
+        "end_seconds": 5.0,
+        "peak_score": 0.8768,
+        "mean_score": 0.7706,
+        "status": "detected"
+      }
+    ],
+    "top_predictions": [
+      {
+        "label": "Vehicle",
+        "score": 0.7706
+      },
+      {
+        "label": "Truck",
+        "score": 0.1375
+      },
+      {
+        "label": "Motor vehicle (road)",
+        "score": 0.1036
+      },
+      {
+        "label": "Bus",
+        "score": 0.0678
+      },
+      {
+        "label": "Outside, urban or manmade",
+        "score": 0.0437
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  },
+  {
+    "filename": "Clip_06.wav",
+    "duration_seconds": 5.0,
+    "model": "YAMNet",
+    "events": [],
+    "top_predictions": [
+      {
+        "label": "Fire",
+        "score": 0.1789
+      },
+      {
+        "label": "Outside, rural or natural",
+        "score": 0.1636
+      },
+      {
+        "label": "Bicycle",
+        "score": 0.144
+      },
+      {
+        "label": "Crackle",
+        "score": 0.1141
+      },
+      {
+        "label": "Animal",
+        "score": 0.0464
+      }
+    ],
+    "limitations": [
+      "Scores are model outputs, not calibrated probabilities.",
+      "Event timestamps are approximate."
+    ]
+  }
+]

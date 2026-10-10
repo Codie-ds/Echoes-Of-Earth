@@ -1,0 +1,7 @@
+filename,verified_source_category,top_prediction,top_score,relevant_top_five_match,detected_events,processing_time_seconds,observations
+Clip_01.wav,Unverified,Animal,0.389,Unverified,"Animal (0.48s-1.92s, 0.9044); Bird (0.48s-1.92s, 0.8791); Wild animals (0.48s-1.92s, 0.8695); Animal (2.4s-3.84s, 0.7265); Animal (3.84s-5.0s, 0.5493)",0.84,5 events detected
+Clip_02.wav,Unverified,Thunderstorm,0.5055,Unverified,"Thunderstorm (0.96s-4.8s, 0.9184); Thunder (0.96s-4.32s, 0.8919); Rain (1.92s-3.36s, 0.523)",0.01,3 events detected
+Clip_03.wav,Unverified,Water,0.7662,Unverified,"Water (0.0s-5.0s, 0.9419); Rain (0.48s-5.0s, 0.9231); Waterfall (0.96s-3.36s, 0.802); Stream (0.96s-3.36s, 0.5853); Gurgling (0.96s-2.4s, 0.3619); Rain on surface (2.4s-5.0s, 0.7277); Raindrop (2.4s-5.0s, 0.6822)",0.01,7 events detected
+Clip_04.wav,Unverified,"Walk, footsteps",0.3323,Unverified,"Walk, footsteps (0.0s-2.88s, 0.694); Outside, rural or natural (0.0s-2.4s, 0.4608); Fireworks (3.36s-4.8s, 0.9884); Explosion (3.36s-4.8s, 0.9737); Firecracker (3.36s-4.8s, 0.5375)",0.01,5 events detected
+Clip_05.wav,Unverified,Vehicle,0.7706,Unverified,"Vehicle (0.0s-5.0s, 0.8768)",0.03,1 events detected
+Clip_06.wav,Unverified,Fire,0.1789,Unverified,,0.01,0 events detected
