@@ -6,6 +6,15 @@ AI-powered environmental sound exploration.
 - **Phase 1**: Initial inference (YAMNet loading and audio analysis).
 - **Phase 2**: The Evidence Engine (frame-level timestamped events).
 - **Phase 3**: MVP Application (FastAPI backend and Web UI).
+- **Phase 4**: Privacy and Reliability Hardening (bounded streaming, sanitized error responses, zero persistence).
+
+## Privacy & Data Processing Lifecycle
+
+- **Local-Only Audio Inference**: All audio decoding, feature extraction, and YAMNet model inference execute entirely on-device (CPU in-memory). No audio recordings, waveforms, embeddings, or predictions are ever transmitted to external APIs or cloud services.
+- **Model Acquisition**: YAMNet weights are fetched once from TensorFlow Hub (`tfhub.dev`) during initialization if not already cached locally. Runtime inference runs 100% offline.
+- **Zero Long-Term Audio Persistence**: Uploaded and recorded audio is streamed to isolated temporary files with random UUID filenames. Temporary files are unconditionally removed in a `finally` block upon completion, validation rejection, decode error, or server exception. Stale files from prior process terminations are wiped on startup.
+- **Path Traversal Protection**: Uploaded filenames are stripped of directory paths and traversal sequences prior to temporary handling and response generation.
+- **Sanitized Error Handling**: Client error responses return generic, actionable messages without leaking internal filesystem paths, stack traces, or exception internals. Server-side logs capture operational diagnostics without recording audio payloads or secrets.
 
 ## Local Run Instructions
 

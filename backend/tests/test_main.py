@@ -141,3 +141,106 @@ def test_concurrent_requests():
             results = list(executor.map(make_request, range(4)))
             
         assert all(results)
+
+def test_path_traversal_filename_sanitization():
+    from unittest.mock import patch
+    import io
+    import soundfile as sf
+    import numpy as np
+
+    # Synthesize small valid WAV
+    buf = io.BytesIO()
+    samples = np.zeros(16000, dtype=np.float32)
+    sf.write(buf, samples, 16000, format="WAV", subtype="PCM_16")
+    wav_bytes = buf.getvalue()
+
+    # Attempt directory traversal filenames
+    traversal_filenames = [
+        "../../../../etc/passwd.wav",
+        "..\\..\\secret\\exploit.wav",
+        "....//....//nested.wav"
+    ]
+
+    with TestClient(app) as client:
+        for fname in traversal_filenames:
+            resp = client.post("/analyze", files={"file": (fname, wav_bytes)})
+            assert resp.status_code == 200
+            data = resp.json()
+            # Ensure path traversal components are completely removed from response
+            assert "/" not in data["filename"]
+            assert "\\" not in data["filename"]
+            assert ".." not in data["filename"]
+            
+    # Verify no leaked files in parent or root directories
+    temp_dir = Path(__file__).resolve().parent.parent / "temp_uploads"
+    if temp_dir.exists():
+        assert len(list(temp_dir.glob("*.wav"))) == 0
+
+def test_generic_error_response_no_stack_trace_leakage():
+    from unittest.mock import patch
+    import io
+    import soundfile as sf
+    import numpy as np
+
+    buf = io.BytesIO()
+    samples = np.zeros(16000, dtype=np.float32)
+    sf.write(buf, samples, 16000, format="WAV", subtype="PCM_16")
+    wav_bytes = buf.getvalue()
+
+    with TestClient(app) as client:
+        # Mock an unexpected internal exception with internal paths and sensitive text
+        with patch("main.analyzer.analyze_audio", side_effect=RuntimeError("Internal C++ crash at /var/private/secrets/core.cpp:99")):
+            resp = client.post("/analyze", files={"file": ("test.wav", wav_bytes)})
+            assert resp.status_code == 500
+            data = resp.json()
+            # Ensure generic response
+            assert data["detail"] == "An internal error occurred during audio analysis."
+            # Confirm no internal paths or exception details leaked in response body
+            assert "/var/private/secrets" not in resp.text
+            assert "core.cpp" not in resp.text
+            assert "RuntimeError" not in resp.text
+
+def test_cleanup_on_unexpected_server_error():
+    from unittest.mock import patch
+    import io
+    import soundfile as sf
+    import numpy as np
+
+    buf = io.BytesIO()
+    samples = np.zeros(16000, dtype=np.float32)
+    sf.write(buf, samples, 16000, format="WAV", subtype="PCM_16")
+    wav_bytes = buf.getvalue()
+
+    temp_dir = Path(__file__).resolve().parent.parent / "temp_uploads"
+
+    with TestClient(app) as client:
+        with patch("main.analyzer.analyze_audio", side_effect=Exception("Database or model died")):
+            resp = client.post("/analyze", files={"file": ("crash.wav", wav_bytes)})
+            assert resp.status_code == 500
+            
+    # Verify cleanup occurred even when inference crashed
+    if temp_dir.exists():
+        assert len(list(temp_dir.glob("*.*"))) == 0
+
+def test_stale_temp_cleanup_on_lifespan_startup():
+    temp_dir = Path(__file__).resolve().parent.parent / "temp_uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    stale_file = temp_dir / "orphaned_crash_file.wav"
+    stale_file.write_bytes(b"leftover from previous crash")
+    assert stale_file.exists()
+
+    # Initializing a new TestClient executes the lifespan context manager
+    with TestClient(app) as client:
+        resp = client.get("/health")
+        assert resp.status_code == 200
+
+    # Lifespan must have wiped the stale file
+    assert not stale_file.exists()
+
+def test_model_not_ready_returns_503():
+    from unittest.mock import patch
+    with TestClient(app) as client:
+        with patch("main.analyzer", None):
+            resp = client.post("/analyze", files={"file": ("test.wav", b"dummy")})
+            assert resp.status_code == 503
+            assert "Model is not ready" in resp.json()["detail"]

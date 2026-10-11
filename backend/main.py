@@ -1,6 +1,9 @@
 import os
 import uuid
+import logging
 from pathlib import Path
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -8,7 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from audio_analyzer import YAMNetAnalyzer
 
-from contextlib import asynccontextmanager
+logger = logging.getLogger("echoes_of_earth")
+
+# Base and temporary directory paths anchored to backend directory
+BASE_DIR = Path(__file__).resolve().parent
+TEMP_DIR = BASE_DIR / "temp_uploads"
+STATIC_DIR = BASE_DIR / "static"
 
 # Global analyzer instance
 analyzer = None
@@ -16,10 +24,20 @@ analyzer = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global analyzer
+    TEMP_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+    
+    # Privacy safeguard: clean up any orphaned temporary files from prior interrupted processes
+    for stale_file in TEMP_DIR.glob("*"):
+        try:
+            if stale_file.is_file():
+                stale_file.unlink()
+        except Exception:
+            pass
+
     try:
         analyzer = YAMNetAnalyzer()
     except Exception as e:
-        print(f"Warning: Failed to load YAMNetAnalyzer during startup: {e}")
+        logger.error("Failed to load YAMNetAnalyzer during startup: %s", type(e).__name__)
     yield
 
 app = FastAPI(title="Echoes of Earth API", lifespan=lifespan)
@@ -45,20 +63,21 @@ async def health_check():
 @app.post("/analyze")
 async def analyze_audio(file: UploadFile = File(...)):
     if not analyzer:
-        raise HTTPException(status_code=503, detail="Model is not ready")
+        raise HTTPException(status_code=503, detail="Model is not ready.")
         
     if not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
+        raise HTTPException(status_code=400, detail="No file provided.")
     
-    # Prepare temporary file path
-    temp_dir = Path("temp_uploads")
-    temp_dir.mkdir(exist_ok=True)
+    # Path traversal protection: extract basename only and strip directory separators
+    raw_name = Path(file.filename.replace("\\", "/")).name.strip()
+    safe_filename = raw_name if raw_name and raw_name not in (".", "..") else "uploaded_audio.wav"
     
-    ext = Path(file.filename).suffix
-    if ext == "":
-        ext = ".wav"
+    # Clamp extension to valid audio suffix to prevent arbitrary file typing
+    safe_ext = Path(safe_filename).suffix.lower()
+    if safe_ext not in [".wav", ".ogg", ".flac", ".mp3", ".webm", ".m4a", ".aac"]:
+        safe_ext = ".wav"
 
-    temp_path = temp_dir / f"{uuid.uuid4()}{ext}"
+    temp_path = TEMP_DIR / f"{uuid.uuid4()}{safe_ext}"
     total_bytes = 0
     
     try:
@@ -78,14 +97,20 @@ async def analyze_audio(file: UploadFile = File(...)):
 
         # Analyze in threadpool to keep event loop responsive
         try:
-            result = await run_in_threadpool(analyzer.analyze_audio, str(temp_path), filename=file.filename)
+            result = await run_in_threadpool(analyzer.analyze_audio, str(temp_path), filename=safe_filename)
         except ValueError as ve:
             err_msg = str(ve)
             if "exceeds the maximum allowed 120 seconds" in err_msg:
-                raise HTTPException(status_code=400, detail=err_msg)
-            raise HTTPException(status_code=422, detail=f"Failed to process audio format: {err_msg}")
+                raise HTTPException(status_code=400, detail="Audio duration exceeds the maximum allowed 120 seconds.")
+            # Format/decoding rejection without exposing internal paths
+            logger.warning("Audio processing rejected: invalid or unparseable format")
+            raise HTTPException(status_code=422, detail="Failed to process audio format. Ensure audio is a valid, supported format.")
+        except HTTPException:
+            raise
         except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Failed to process audio format or perform inference. Librosa supports WAV/OGG natively, and others via ffmpeg. Ensure audio is a valid format. Error: {str(e)}")
+            # Internal server error without leaking internal filesystem paths, stack traces, or secrets
+            logger.error("Unexpected error during audio inference: %s", type(e).__name__)
+            raise HTTPException(status_code=500, detail="An internal error occurred during audio analysis.")
             
         return result
     finally:
@@ -97,6 +122,5 @@ async def analyze_audio(file: UploadFile = File(...)):
                 pass
 
 # Create static directory if it doesn't exist
-static_dir = Path("static")
-static_dir.mkdir(exist_ok=True)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
