@@ -34,15 +34,30 @@ The server will start on `http://127.0.0.1:8000`.
 Since the frontend is served as static files by FastAPI, simply navigate to:
 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
-### 5. Testing the API
-- **Health check**: Visit `http://127.0.0.1:8000/health`
-- **Upload via browser**: Open the web UI, select a WAV file, and click "Analyze Audio".
+### 5. Running the Test Suite
+From the `backend` directory:
+```bash
+cd backend
+pytest tests/ -v
+```
+
+### 6. Testing the API
+- **Health check**:
+  ```bash
+  curl http://127.0.0.1:8000/health
+  ```
 - **Upload via curl**:
   ```bash
+  # From repository root:
   curl -F "file=@backend/samples/Clip_06.wav" http://127.0.0.1:8000/analyze
+  # Or from backend directory:
+  curl -F "file=@samples/Clip_06.wav" http://127.0.0.1:8000/analyze
   ```
-- **Record via browser**: Open the web UI, click "Start Recording", speak or play a sound, then click "Stop Recording" and "Analyze Audio". 
-  *(Note: Microphone access requires localhost or HTTPS).*
+- **In-browser Recording**: Open `http://127.0.0.1:8000/`, click "Start Recording", speak or play environmental audio, click "Stop Recording", then click "Analyze Audio".
+  *(Microphone capture uses the Web Audio API to produce standard 16-bit PCM WAV audio, ensuring cross-platform support without requiring FFmpeg).*
 
-### Supported Audio Formats
-The backend natively supports formats decodable by `librosa` and `soundfile` (such as WAV, OGG, and FLAC). When you record from the browser, it typically sends a `.webm` or `.ogg` blob. The application writes it to a temporary file and analyzes it. If ffmpeg is installed on the host machine, `librosa` (via soundfile/audioread) can handle `.webm`. If not, `.webm` analysis might fail, but `.wav` uploads will succeed.
+### Supported Audio Formats & Host Constraints
+- **Native Formats**: WAV, OGG, and FLAC are decoded natively on the backend via `soundfile` and `librosa` without external system dependencies.
+- **Microphone Capture**: The web UI directly records to 16 kHz 16-bit mono WAV, decodable on any platform out of the box.
+- **Host Limitations**: Formats requiring FFmpeg (such as containerized WebM or MP4 uploads) require an installed `ffmpeg` binary on the host machine. If FFmpeg is not installed, uploading those formats returns HTTP 422 with an explanatory error.
+- **Resource Limits**: Uploads are restricted to 10 MB (enforced via streaming chunk checks), and audio duration is strictly limited to 120 seconds (with bounded decoding).

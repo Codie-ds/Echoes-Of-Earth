@@ -33,12 +33,27 @@ class YAMNetAnalyzer:
 
         start_time = time.time()
         
-        # Load audio (this will resample to 16000 and convert to mono)
+        # Load audio with duration and resource bounds (resample to 16000 Hz, mono)
         try:
-            audio, _ = librosa.load(str(file_path), sr=16000, mono=True)
+            # 1. Fast metadata inspection for container-supported formats (e.g. WAV, FLAC, OGG)
+            try:
+                import soundfile as sf
+                info = sf.info(str(file_path))
+                if info.duration > 120.0:
+                    raise ValueError(f"Audio duration ({round(info.duration, 2)}s) exceeds the maximum allowed 120 seconds.")
+            except (RuntimeError, ValueError) as ve:
+                if "exceeds the maximum allowed" in str(ve):
+                    raise
+                # Non-soundfile container or unparsed header; proceed to bounded load
+                pass
+
+            # 2. Bounded decode: decode at most 121 seconds to prevent resource exhaustion from decompression bombs
+            audio, _ = librosa.load(str(file_path), sr=16000, mono=True, duration=121.0)
             duration = round(len(audio) / 16000, 2)
             if duration > 120.0:
                 raise ValueError(f"Audio duration ({duration}s) exceeds the maximum allowed 120 seconds.")
+        except ValueError:
+            raise
         except Exception as e:
             raise ValueError(f"Failed to load audio: {e}")
 

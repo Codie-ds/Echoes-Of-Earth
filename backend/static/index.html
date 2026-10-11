@@ -125,14 +125,18 @@
     </div>
 
     <div class="disclaimer">
-        <strong>Note:</strong> Microphone recording requires browser permission and HTTPS (or localhost). 
-        Browser recordings may use formats like WebM which the backend will attempt to decode. 
-        Model scores are model outputs, not calibrated probabilities, and timestamps are approximate.
+        <strong>Note:</strong> Microphone recording captures audio in standard PCM WAV format (16-bit, mono), which is natively decodable on all host platforms without requiring external decoders like FFmpeg.
+        Uploaded files support WAV, OGG, and FLAC natively; WebM or MP4 files require server-side FFmpeg.
+        Model scores are raw YAMNet outputs, not calibrated probabilities, and timestamps are approximate.
     </div>
 
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
+        let audioContext = null;
+        let mediaStream = null;
+        let scriptProcessor = null;
+        let pcmChunks = [];
+        let totalSamples = 0;
+        let isRecording = false;
         let currentAudioBlob = null;
         let currentFilename = null;
 
@@ -143,48 +147,129 @@
         const btnAnalyze = document.getElementById('btnAnalyze');
         const statusMessage = document.getElementById('statusMessage');
         const analyzeStatus = document.getElementById('analyzeStatus');
-        
-        // Handle Recording
+
+        function setStatus(msg, color = '#333') {
+            statusMessage.textContent = msg;
+            statusMessage.style.color = color;
+        }
+
+        // Handle Microphone Recording with pure Web Audio API -> 16-bit PCM WAV
         btnRecord.addEventListener('click', async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Microphone recording requires a secure origin (localhost or HTTPS).");
+                }
 
-                mediaRecorder.ondataavailable = e => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioCtx({ sampleRate: 16000 });
+                const sampleRate = audioContext.sampleRate;
+
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                pcmChunks = [];
+                totalSamples = 0;
+                isRecording = true;
+
+                scriptProcessor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+                    const channelData = e.inputBuffer.getChannelData(0);
+                    pcmChunks.push(new Float32Array(channelData));
+                    totalSamples += channelData.length;
                 };
 
-                mediaRecorder.onstop = () => {
-                    currentAudioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                    currentFilename = "browser_recording.webm";
-                    setupAudioPlayback(currentAudioBlob);
-                    stream.getTracks().forEach(track => track.stop());
-                };
+                source.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
 
-                mediaRecorder.start();
                 btnRecord.disabled = true;
                 btnStop.disabled = false;
                 fileInput.disabled = true;
-                statusMessage.textContent = "Recording...";
-                statusMessage.style.color = "#e74c3c";
+                btnAnalyze.disabled = true;
+                setStatus("Recording... Speak or play environmental sounds.", "#e74c3c");
             } catch (err) {
-                console.error(err);
-                statusMessage.textContent = "Microphone access denied or error occurred.";
-                statusMessage.style.color = "red";
+                console.error("Recording error:", err);
+                setStatus("Microphone error: " + (err.message || "Permission denied or unavailable."), "#e74c3c");
             }
         });
 
         btnStop.addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                btnRecord.disabled = false;
-                btnStop.disabled = true;
-                fileInput.disabled = false;
-                statusMessage.textContent = "Recording stopped.";
-                statusMessage.style.color = "green";
+            if (!isRecording) return;
+            isRecording = false;
+
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                scriptProcessor = null;
             }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            const sampleRate = audioContext ? audioContext.sampleRate : 16000;
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            // Encode raw PCM buffer to canonical 16-bit PCM WAV blob
+            const wavBlob = encodeWAV(pcmChunks, totalSamples, sampleRate);
+            currentAudioBlob = wavBlob;
+            currentFilename = "browser_recording.wav";
+            setupAudioPlayback(wavBlob);
+
+            btnRecord.disabled = false;
+            btnStop.disabled = true;
+            fileInput.disabled = false;
+            setStatus("Recording stopped. Audio preview ready.", "#27ae60");
         });
+
+        // Encode Float32Array PCM chunks into standard 16-bit signed PCM WAV
+        function encodeWAV(chunks, numSamples, sampleRate) {
+            const merged = new Float32Array(numSamples);
+            let offset = 0;
+            for (const chunk of chunks) {
+                merged.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            const buffer = new ArrayBuffer(44 + merged.length * 2);
+            const view = new DataView(buffer);
+
+            function writeString(pos, str) {
+                for (let i = 0; i < str.length; i++) {
+                    view.setUint8(pos + i, str.charCodeAt(i));
+                }
+            }
+
+            // RIFF header
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + merged.length * 2, true);
+            writeString(8, 'WAVE');
+
+            // fmt sub-chunk
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+            view.setUint16(20, 1, true);  // AudioFormat (1 = PCM)
+            view.setUint16(22, 1, true);  // NumChannels (1 mono)
+            view.setUint32(24, sampleRate, true); // SampleRate
+            view.setUint32(28, sampleRate * 2, true); // ByteRate (sampleRate * 1 * 2)
+            view.setUint16(32, 2, true);  // BlockAlign (1 * 2)
+            view.setUint16(34, 16, true); // BitsPerSample (16-bit)
+
+            // data sub-chunk
+            writeString(36, 'data');
+            view.setUint32(40, merged.length * 2, true);
+
+            // 16-bit PCM samples
+            let byteOffset = 44;
+            for (let i = 0; i < merged.length; i++) {
+                let s = Math.max(-1, Math.min(1, merged[i]));
+                view.setInt16(byteOffset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                byteOffset += 2;
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
 
         // Handle File Upload
         fileInput.addEventListener('change', (e) => {
@@ -193,8 +278,7 @@
                 currentAudioBlob = file;
                 currentFilename = file.name;
                 setupAudioPlayback(file);
-                statusMessage.textContent = "File selected.";
-                statusMessage.style.color = "green";
+                setStatus(`File selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, "#27ae60");
             }
         });
 
@@ -212,6 +296,7 @@
             btnAnalyze.disabled = true;
             analyzeStatus.classList.remove('hidden');
             document.getElementById('resultsCard').classList.add('hidden');
+            setStatus("Uploading and analyzing audio...", "#2980b9");
             
             const formData = new FormData();
             formData.append("file", currentAudioBlob, currentFilename);
@@ -224,12 +309,14 @@
 
                 if (!response.ok) {
                     const err = await response.json();
-                    throw new Error(err.detail || "Analysis failed");
+                    throw new Error(err.detail || `Analysis failed with HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
                 displayResults(data);
+                setStatus("Analysis complete.", "#27ae60");
             } catch (error) {
+                setStatus("Error: " + error.message, "#e74c3c");
                 alert("Error: " + error.message);
             } finally {
                 btnAnalyze.disabled = false;
